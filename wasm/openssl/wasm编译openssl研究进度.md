@@ -20,7 +20,7 @@
 
 - EMCC编译C/C++流程（OK）
 
- ![](./emcc编译流程.png)
+ ![Image](./emcc编译流程.png)
  
   1. C/C++代码首先通过Clang编译为LLVM字节码，然后根据不同的目标编译为asm.js或wasm
   2. 由于内部调用Clang，因此emcc支持绝大多数的Clang编译选项。比如-s OPTIONS=VALUE、-O、-g等。除此之外，为了适应Web环境，emcc增加了一些特有的选项，如--pre-js <file>、--post-js <file>等。
