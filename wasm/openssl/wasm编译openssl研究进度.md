@@ -174,7 +174,7 @@ void md5(char *str, char *result) {
 	```
 	emrun --no_browser --port 8080 ~/hisun/gospace/src/aes-stu/js/md5/md5.html
 	
-	consul结果:
+	console结果:
 	
     文件名:HelloWorld.txt大小:13
     md5.html:31 Hello World
