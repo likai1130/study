@@ -83,29 +83,28 @@
  - 调用openssl中的加密方法，以md5为例
 
  ```
- 	// md5.c
- 	
- 	#include <emscripten.h>
-	#include <openssl/md5.h>
-	#include <string.h>
-	#include <stdio.h>
-	
-	EMSCRIPTEN_KEEPALIVE
-	void md5(char *str, char *result) {
-	  MD5_CTX md5_ctx;
-	  int MD5_BYTES = 16;
-	  unsigned char md5sum[MD5_BYTES];
-	  MD5_Init(&md5_ctx);
-	  MD5_Update(&md5_ctx, str, strlen(str));
-	  MD5_Final(md5sum, &md5_ctx);
-	  char temp[3] = {0};
-	  memset(result, sizeof(char) * 32, 0);
-	  for (int i = 0; i < MD5_BYTES; i++) {
-	    sprintf(temp, "%02x", md5sum[i]);
-	    strcat(result, temp);
-	  }
-	  result[32] = '\0';
-	}
+// md5.c
+#include <emscripten.h>
+#include <openssl/md5.h>
+#include <string.h>
+#include <stdio.h>
+
+EMSCRIPTEN_KEEPALIVE
+void md5(char *str, char *result) {
+  MD5_CTX md5_ctx;
+  int MD5_BYTES = 16;
+  unsigned char md5sum[MD5_BYTES];
+  MD5_Init(&md5_ctx);
+  MD5_Update(&md5_ctx, str, strlen(str));
+  MD5_Final(md5sum, &md5_ctx);
+  char temp[3] = {0};
+  memset(result, sizeof(char) * 32, 0);
+  for (int i = 0; i < MD5_BYTES; i++) {
+    sprintf(temp, "%02x", md5sum[i]);
+    strcat(result, temp);
+  }
+  result[32] = '\0';
+}
  	
  ```
  	这里引入了 emscripten.h 来解决JS调用C语言的问题.
@@ -120,55 +119,54 @@
 
 	```
 	<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Md5 wasm</title>
-</head>
-<body>
-<div>
-    <input type="file" id="files" style="display: none" onchange="fileImport();">
-    <input type="button" id="fileImport" value="导入">
-</div>
-<script src="md5.js"></script>
-<script src="jquery-3.5.1.min.js"></script>
-<script type='text/javascript'>
-    //点击导入按钮,使files触发点击事件,然后完成读取文件的操作
-    $("#fileImport").click(function() {
-        $("#files").click();
-    })
-
-    function fileImport() {
-        //获取读取我文件的File对象
-        var selectedFile = document.getElementById('files').files[0];
-        var name = selectedFile.name; //读取选中文件的文件名
-        var size = selectedFile.size; //读取选中文件的大小
-        console.log("文件名:" + name + "大小:" + size);
-        var reader = new FileReader(); //这是核心,读取操作就是由它完成.
-        reader.readAsBinaryString(selectedFile)
-        //reader.readAsText(selectedFile); //读取文件的内容,也可以读取文件的URL
-        reader.onload = function() {
-            //当读取完成后回调这个函数,然后此时文件的内容存储到了result中,直接操作即可
-            console.log(reader.result);
-            
-            //下面逻辑直接调用md5.js中的方法和属性
-            const mallocByteBuffer = len => {
-                var buf = new ArrayBuffer(len);
-                const ptr = _malloc(len)
-                const heapBytes = new Uint8Array(HEAP8.buffer,ptr, len)
-                return heapBytes
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Md5 wasm</title>
+    </head>
+    <body>
+    <div>
+        <input type="file" id="files" style="display: none" onchange="fileImport();">
+        <input type="button" id="fileImport" value="导入">
+    </div>
+    <script src="md5.js"></script>
+    <script src="jquery-3.5.1.min.js"></script>
+    <script type='text/javascript'>
+        //点击导入按钮,使files触发点击事件,然后完成读取文件的操作
+        $("#fileImport").click(function() {
+            $("#files").click();
+        })
+    
+        function fileImport() {
+            //获取读取我文件的File对象
+            var selectedFile = document.getElementById('files').files[0];
+            var name = selectedFile.name; //读取选中文件的文件名
+            var size = selectedFile.size; //读取选中文件的大小
+            console.log("文件名:" + name + "大小:" + size);
+            var reader = new FileReader(); //这是核心,读取操作就是由它完成.
+            reader.readAsBinaryString(selectedFile)
+            //reader.readAsText(selectedFile); //读取文件的内容,也可以读取文件的URL
+            reader.onload = function() {
+                //当读取完成后回调这个函数,然后此时文件的内容存储到了result中,直接操作即可
+                console.log(reader.result);       
+                //下面逻辑直接调用md5.js中的方法和属性
+                const mallocByteBuffer = len => {
+                    var buf = new ArrayBuffer(len);
+                    const ptr = _malloc(len)
+                    const heapBytes = new Uint8Array(HEAP8.buffer,ptr, len)
+                    return heapBytes
+                }
+                const array = Array.from(reader.result).map(v => v.charCodeAt(0))
+                const inBuffer = mallocByteBuffer(array.length)
+                inBuffer.set(array)
+                const outBuffer = mallocByteBuffer(32)
+                _md5(inBuffer.byteOffset,outBuffer.byteOffset)
+                console.log(Array.from(outBuffer).map(v => String.fromCharCode(v)).join(''))
             }
-            const array = Array.from(reader.result).map(v => v.charCodeAt(0))
-            const inBuffer = mallocByteBuffer(array.length)
-            inBuffer.set(array)
-            const outBuffer = mallocByteBuffer(32)
-            _md5(inBuffer.byteOffset,outBuffer.byteOffset)
-            console.log(Array.from(outBuffer).map(v => String.fromCharCode(v)).join(''))
         }
-    }
-</script>
-</body>
-</html>
+    </script>
+    </body>
+    </html>
 
 	```
 - 运行
@@ -178,12 +176,15 @@
 	
 	consul结果:
 	
-		文件名:HelloWorld.txt大小:13
-		md5.html:31 Hello World
-		
-		md5.html:43 a349e7a744d1dcaba35d9020fdfff9f0
+    文件名:HelloWorld.txt大小:13
+    md5.html:31 Hello World
+    
+    md5.html:43 a349e7a744d1dcaba35d9020fdfff9f0
 	```
-	
+- 源码位置
+
+  同级目录下，demo目录
+  
 #### 三、Openssl编译到WebAssembly并且使用的流程（可能有更好的方案）
 
 ![](./openssl编译完整流程.png)
