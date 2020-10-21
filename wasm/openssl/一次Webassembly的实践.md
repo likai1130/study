@@ -457,6 +457,7 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 		md5.html代码很简单，写个上传文件的功能，把文件内容用arraybuffer读出来，再把arraybuffer丢给md5.js中的md5和sha1两个方法进行计算。主要说一下如何传参数的问题。
 		
 		wasm 导入和导出的函数参数只能是数字，要传递复杂值，必须借助 WebAssembly.Memory()实现，它是由宿主环境开辟的内存，交给 wasm 模块来运行，在运行时这块内存可以被 wasm 模块和宿主环境共同管理，这是 wasm 和宿主环境实现大块数据通信的基础。就是说逻辑js要调用wasm生成的js，要把参数需要的内存大小提前开辟出来。主要代码如下：
+		
 			
 		```
 		// md5.html
@@ -467,35 +468,34 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 	    }
 	   
 		```
-		
 		这是一个JS封装后的方法，用来开辟内存。Module._malloc(len)，这是md5.js胶水代码封装了wasm实现的，看下具体内容：
 		
 		```
-        //md5.js
-        
-        /** @type {function(...*):?} */
-        var _malloc = Module["_malloc"] = createExportWrapper("malloc");
-        
-        // Create the main memory. (Note: this isn't used in STANDALONE_WASM mode since the wasm
-        // memory is created in the wasm, not in JS.)
-        
-        if (Module['wasmMemory']) {
-            wasmMemory = Module['wasmMemory'];
-          } else
-          {
-            wasmMemory = new WebAssembly.Memory({
-              'initial': INITIAL_INITIAL_MEMORY / WASM_PAGE_SIZE
-              ,
-              'maximum': 2147483648 / WASM_PAGE_SIZE
-            });
-          }
-        
-        
-        if (wasmMemory) {
-          buffer = wasmMemory.buffer;
-        }
-        
-        ```
+		//md5.js
+		
+		/** @type {function(...*):?} */
+		var _malloc = Module["_malloc"] = createExportWrapper("malloc");
+		
+		// Create the main memory. (Note: this isn't used in STANDALONE_WASM mode since the wasm
+		// memory is created in the wasm, not in JS.)
+		
+		 if (Module['wasmMemory']) {
+		    wasmMemory = Module['wasmMemory'];
+		  } else
+		  {
+		    wasmMemory = new WebAssembly.Memory({
+		      'initial': INITIAL_INITIAL_MEMORY / WASM_PAGE_SIZE
+		      ,
+		      'maximum': 2147483648 / WASM_PAGE_SIZE
+		    });
+		  }
+		
+		
+		if (wasmMemory) {
+		  buffer = wasmMemory.buffer;
+	}
+		
+		```
 		
 		这块内存就是 wasm 模块运行时使用的内存，可以通过 wasm 指令读取、写入以及 grow，对应到 C/C++ 源码里就是指针和 new/malloc 之类的操作；同时这块内存又是一个 js 变量，也可以在 js 里读写它的值。
 
@@ -554,7 +554,11 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 	
 	```
 	
-#### 四、写在最后
+#### 四、openssl wasm与openssl部分加密的性能对比。
+
+参考上篇文章: [Openssl 编译成.wasm文件.md](./Openssl 编译成.wasm文件.md)
+
+#### 五、写在最后
 
 参考资料：
 
@@ -564,7 +568,7 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 - WebAssembly API（中文，解决逻辑JS调用wasm问题。）：
 	- https://developer.mozilla.org/zh-CN/docs/WebAssembly#API%E5%8F%82%E8%80%83
 
-- Emscripten 语法学习（解决C语言调用JS语法§问题）：
+- Emscripten 语法学习（解决C语言调用JS语法问题）：
 	- https://emscripten.org/docs/api_reference/emscripten.h.html#c.EM_ASM_
 
 - 入门参考： http://www.ruanyifeng.com/blog/2017/09/asmjs_emscripten.html
