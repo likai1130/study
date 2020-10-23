@@ -319,7 +319,7 @@ echo "Done"
 | CTR  | 2.168s |   6.297s | 11.424s | 128bit  |
 
 
-![](./openssl对比.png)
+![](images/openssl对比.png)
 
 #### 性能对比分析
 

@@ -20,7 +20,7 @@
 
 - EMCC编译C/C++流程（OK）
 
- ![Image](./emcc编译流程.png)
+ ![Image](images/emcc编译流程.png)
  
   1. C/C++代码首先通过Clang编译为LLVM字节码，然后根据不同的目标编译为asm.js或wasm
   2. 由于内部调用Clang，因此emcc支持绝大多数的Clang编译选项。比如-s OPTIONS=VALUE、-O、-g等。除此之外，为了适应Web环境，emcc增加了一些特有的选项，如--pre-js <file>、--post-js <file>等。
@@ -45,7 +45,7 @@
 ##### Openssl编译：
 	
 	
-![](./openssl编译.png)
+![](images/openssl编译.png)
 
 	1. 将openssl的.c文件使用emcc编译成openssl.js和openssl.wasm文件
 
@@ -55,7 +55,7 @@
 
 ##### 接口调用关系:
 
-![](./接口调用关系.png)
+![](images/接口调用关系.png)
 
 	1. 这是网上抄的图，调用逻辑都一样，这里的DOM API如果有需要是要封装成js接口，编译的时候注入到C代码里。
 	 
@@ -187,7 +187,7 @@ void md5(char *str, char *result) {
   
 #### 三、Openssl编译到WebAssembly并且使用的流程（可能有更好的方案）
 
-![](./openssl编译完整流程.png)
+![](images/openssl编译完整流程.png)
 
 #### 四、参考文档梳理
 

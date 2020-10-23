@@ -6,6 +6,7 @@
 - Webassembly本地安装。
 - Webassembly实践，以openssl项目为例。
 - Webassembly实践中遇到的问题，以及解决办法。
+- AES加密算法各种语言性能对比
 - 参考资料
 
 #### 一、 Webassembly介绍
@@ -52,7 +53,7 @@
 
 	首先你需要一个将源代码编译为 WebAssembly 的工具，推荐使用emsdk，下载地址：git clone https://github.com/juj/emsdk.git，后续会介绍如何在本地安装。我们先说下WebAssembly的工作原理：如图
 
-![](./emcc编译流程.png)
+![](images/emcc编译流程.png)
 
 这是一个WebAssembly编译过程的图例，C/C++代码首先通过Clang编译为LLVM字节码，然后根据不同的目标编译为asm.js或wasm。
 
@@ -248,7 +249,7 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 
 1. 项目背景
 
-	想用前端JS实现一个文件加密的功能，会用到摘要算法（md5,sha1,sha256）,对称加密（AES）和非对称加密（RSA）。前端加密库也是有的，openssl的加密库更全面一点，考虑使用Webassembly编译openssl，是在js中使用，看会遇到哪些问题。重点讲述下调用openssl库的整个过程。
+	最近在做和加密相关的项目，涉及包含服务端、客户端、web端均需要使用AES 多模块加密算法对数据进行频繁加密，为了统一加密方式，都采用了openssl的加解密。前端js没有openssl封装的库，所以考虑编译openssl到Webassembly，然后使用js调用算法，以md5和sha1为例，从openssl源码到js调用的整个过程。
 
 2. 需求分析
 
@@ -320,7 +321,7 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 
 	前面介绍了本地编译安装Emscripten，这是一个编译wasm的工具，用来编译生成wasm文件，和js文件。
 	
-	![](./openssl编译.png)
+	![](images/openssl编译.png)
 
 	我们的目标是C语言程序跑在浏览器中，所以使用Emscripten来编译，生成js文件来辅助运行，具体怎么编译，根据官方文档配置下。
 	
@@ -343,7 +344,7 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 	其中BC之间是依赖关系，B加载C，并且调用。
 	A是上传文件的逻辑，直接调用B的逻辑方法。整体流程长这个样子：
 	
-	![](./接口调用关系.png)
+	![](images/接口调用关系.png)
 
 	图中 (A) 透出的接口就是上面 md5.html 用到的接口，主要是一个md5和sha1的两个算法。(D) 就是前端很熟悉的 DOM API，不再赘述。中间响应式框架这层把 wasm + js 两个文件画成三层的奥利奥结构，是因为虽然 js 文件只有一个，但是从逻辑上区分它做了两件事情，分别处理 wasm 的输入和输出。
 	
@@ -536,21 +537,23 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 		
 		sha1: 9ef00799a4472c71f2177fd7254faaaadedb0807
 	
-		![](./wasm_md5.png)
+		![](images/wasm_md5.png)
 		
-		![](./openss_md5.png)
+		![](images/openss_md5.png)
 	
 		一个是程序计算的md5和sha1，一个是系统上openssl计算的md5和sha1，说明本次Webassembly编译openssl的实践是成功的。如果要使用openssl的加密相关算法，直接用C和Emscripten封装即可，把算法都写在一个文件里面，最后一次编译就行。
 	4. 完整调用关系：
 
-	 ![](./openssl编译完整流程.png)
+	 ![](images/openssl编译完整流程.png)
 	 
 	5. 实践中遇到的问题:
 
 	```
 	思路上的问题：
 	
-	一直以为把openssl整个项目都编译了，就会得到一个openssl.wasm文件，其实并不会。这是一个JS调用C的问题，应该将openssl编译成静态库，这里的编译要用emmake编译，用原生的make编译在最后js调用的时候不能用。然后使用Emscripten语法来粘合JS与C之间的调用关系，然后编译成.wasm文件和.js文件，直接调用js文件即可。
+	一直以为把openssl整个项目都编译了，就会得到一个openssl.wasm文件，经过实践证明确实可以，这个.wasm文件是可执行的，需要其他工具来编译，但是无法用js来调用里面的方法，与我们需求不一致，具体操作可看下目录四文档，直接编译.wasm文件。
+	
+	然而这是一个JS调用C的问题，应该将openssl编译成静态库，需要注意的是这里的编译要用emmake编译，用原生的make编译在最后js调用的时候不能用，提示编译有问题。然后使用Emscripten语法来粘合JS与C之间的调用关系，编译成.wasm文件和.js文件，直接调用js文件即可。
 	
 	```
 	
@@ -558,9 +561,13 @@ WebAssembly 只有四种原始类型，都是数字 - 整数(integer)和浮点�
 
 参考上篇文章: [Openssl 编译成.wasm文件.md](openssl编译成.wasm文件.md)
 
+AES性能结果总汇:[AES性能结果总汇.mdW](AES性能结果总汇.md)
+  
 #### 五、写在最后
 
 参考资料：
+
+- 示例代码地址: https://github.com/likai1130/study/tree/master/wasm/openssl/demo
 
 - Mac编译openssl到WebAssembly: 
 	- https://asyncoder.com/2020/01/02/Mac%E4%B8%8A%E7%BC%96%E8%AF%91openSSL%E5%88%B0WebAssembly/
